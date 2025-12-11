@@ -217,6 +217,31 @@ async def update_panel(guild_id: int, interaction: discord.Interaction | None):
 
 
 # ---------------------------
+# Volume Adjustment Without Restarting
+# ---------------------------
+async def adjust_volume(gm: GuildMusic):
+    if not gm.voice:
+        return
+
+    # Apply the volume change directly to the FFmpeg audio stream
+    if gm.voice.is_playing():
+        # Recreate the audio source with the updated volume
+        ffmpeg_options = {
+            "before_options": FFMPEG_BASE_BEFORE,
+            "options": FFMPEG_OPTIONS_TEMPLATE.format(volume=gm.volume)
+        }
+
+        source = discord.FFmpegOpusAudio(
+            gm.current["audio_url"],
+            before_options=ffmpeg_options["before_options"],
+            options=ffmpeg_options["options"]
+        )
+
+        # Replace the current audio source in the voice client
+        gm.voice.play(source)
+
+
+# ---------------------------
 # Play Logic
 # ---------------------------
 async def restart_current(interaction: discord.Interaction, gm: GuildMusic):
