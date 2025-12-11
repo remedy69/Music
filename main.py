@@ -75,30 +75,36 @@ class MusicPanel(View):
     @button(label="Volume -", style=discord.ButtonStyle.secondary, emoji="🔉", custom_id="vol_down")
     async def vol_down(self, interaction: discord.Interaction, b: Button):
         gm = get_guild_music(interaction.guild_id)
+        
+        # Decrease volume and ensure it doesn't go below 0.1
         gm.volume = max(0.1, round(gm.volume - 0.1, 2))
 
         await interaction.response.defer(ephemeral=True)
 
-        if gm.current and gm.voice and gm.voice.is_playing():
-            await restart_current(interaction, gm)
-            await interaction.followup.send(f"🔉 Volume set to {gm.volume:.1f}", ephemeral=True)
-        else:
-            await interaction.followup.send(f"🔉 Volume set to {gm.volume:.1f}", ephemeral=True)
+        if gm.voice and gm.voice.is_playing():
+            # Apply the volume change without restarting the song
+            await adjust_volume(gm)
+
+        # Send a confirmation message
+        await interaction.followup.send(f"🔉 Volume set to {gm.volume:.1f}", ephemeral=True)
 
         await update_panel(interaction.guild_id, interaction)
 
     @button(label="Volume +", style=discord.ButtonStyle.secondary, emoji="🔊", custom_id="vol_up")
     async def vol_up(self, interaction: discord.Interaction, b: Button):
         gm = get_guild_music(interaction.guild_id)
+        
+        # Increase volume and ensure it doesn't go above 2.0
         gm.volume = min(2.0, round(gm.volume + 0.1, 2))
 
         await interaction.response.defer(ephemeral=True)
 
-        if gm.current and gm.voice and gm.voice.is_playing():
-            await restart_current(interaction, gm)
-            await interaction.followup.send(f"🔊 Volume set to {gm.volume:.1f}", ephemeral=True)
-        else:
-            await interaction.followup.send(f"🔊 Volume set to {gm.volume:.1f}", ephemeral=True)
+        if gm.voice and gm.voice.is_playing():
+            # Apply the volume change without restarting the song
+            await adjust_volume(gm)
+
+        # Send a confirmation message
+        await interaction.followup.send(f"🔊 Volume set to {gm.volume:.1f}", ephemeral=True)
 
         await update_panel(interaction.guild_id, interaction)
 
@@ -277,9 +283,6 @@ async def play_next(interaction: discord.Interaction | None, gm: GuildMusic):
             before_options=ffmpeg_options["before_options"],
             options=ffmpeg_options["options"]
         )
-        if not gm.voice:
-            gm.playing = False
-            return
         gm.voice.play(source, after=after_play)
         gm.playing = True
     except Exception as e:
