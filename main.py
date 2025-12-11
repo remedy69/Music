@@ -81,9 +81,9 @@ class MusicPanel(View):
 
         if gm.current and gm.voice and gm.voice.is_playing():
             await restart_current(interaction, gm)
-            await interaction.followup.send(f"🔉 Volume set to {gm.volume:.1f}")
+            await interaction.followup.send(f"🔉 Volume set to {gm.volume:.1f}", ephemeral=True)
         else:
-            await interaction.followup.send(f"🔉 Volume set to {gm.volume:.1f}")
+            await interaction.followup.send(f"🔉 Volume set to {gm.volume:.1f}", ephemeral=True)
 
         await update_panel(interaction.guild_id, interaction)
 
@@ -96,9 +96,9 @@ class MusicPanel(View):
 
         if gm.current and gm.voice and gm.voice.is_playing():
             await restart_current(interaction, gm)
-            await interaction.followup.send(f"🔊 Volume set to {gm.volume:.1f}")
+            await interaction.followup.send(f"🔊 Volume set to {gm.volume:.1f}", ephemeral=True)
         else:
-            await interaction.followup.send(f"🔊 Volume set to {gm.volume:.1f}")
+            await interaction.followup.send(f"🔊 Volume set to {gm.volume:.1f}", ephemeral=True)
 
         await update_panel(interaction.guild_id, interaction)
 
@@ -185,11 +185,7 @@ async def update_panel(guild_id: int, interaction: discord.Interaction | None):
         embed.description = "No track playing."
 
     if gm.queue:
-        qtext = ""
-        for i, s in enumerate(gm.queue[:6], start=1):
-            qtext += f"{i}. {s['title']}\n"
-        if len(gm.queue) > 6:
-            qtext += f"...and {len(gm.queue) - 6} more"
+        qtext = "\n".join([f"{i}. {s['title']}" for i, s in enumerate(gm.queue[:6], 1)])
         embed.add_field(name="Queue", value=qtext, inline=False)
     else:
         embed.add_field(name="Queue", value="(empty)", inline=False)
@@ -423,4 +419,3 @@ async def on_ready():
 if __name__ == "__main__":
     TOKEN = os.getenv("DISCORD_BOT_TOKEN") or "YOUR_TOKEN"
     bot.run(TOKEN)
-
