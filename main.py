@@ -336,11 +336,22 @@ async def play_cmd(interaction: discord.Interaction, query: str):
     await interaction.response.defer()
     gm = get_guild_music(interaction.guild_id)
 
+    # Check if the user is in a voice channel
     if not interaction.user.voice or not interaction.user.voice.channel:
-        return await interaction.followup.send("❌ You must be in a voice channel.")
+        # If the user is not in a voice channel, let the bot choose the first available voice channel
+        channel = None
+        for guild_channel in interaction.guild.voice_channels:
+            if channel is None:  # pick the first available channel
+                channel = guild_channel
+        if channel is None:
+            return await interaction.followup.send("❌ No voice channels available.")
+    else:
+        # If the user is in a voice channel, join that one
+        channel = interaction.user.voice.channel
 
+    # Connect the bot to the selected voice channel
     if not gm.voice:
-        gm.voice = await interaction.user.voice.channel.connect()
+        gm.voice = await channel.connect()
         await asyncio.sleep(0.4)
 
     if not (query.startswith("http://") or query.startswith("https://")):
@@ -359,75 +370,7 @@ async def play_cmd(interaction: discord.Interaction, query: str):
 
     if not gm.playing:
         await play_next(interaction, gm)
-
-
-@TREE.command(name="skip", description="Skip to next song.")
-async def skip_cmd(interaction: discord.Interaction):
-    await interaction.response.defer()
-    gm = get_guild_music(interaction.guild_id)
-
-    if gm.voice and gm.voice.is_playing():
-        gm.voice.stop()
-        await interaction.followup.send("⏭ Skipped.")
-    else:
-        if gm.queue:
-            await play_next(interaction, gm)
-            await interaction.followup.send("⏭ Started next track.")
-        else:
-            await interaction.followup.send("❌ Nothing to skip.")
-
-    await update_panel(interaction.guild_id, interaction)
-
-
-@TREE.command(name="stop", description="Stop music and clear queue.")
-async def stop_cmd(interaction: discord.Interaction):
-    await interaction.response.defer()
-    gm = get_guild_music(interaction.guild_id)
-    gm.queue.clear()
-    gm.playing = False
-
-    if gm.voice and gm.voice.is_playing():
-        gm.voice.stop()
-
-    await interaction.followup.send("⛔ Stopped and cleared queue.")
-    await update_panel(interaction.guild_id, interaction)
-
-
-@TREE.command(name="pause", description="Pause current song.")
-async def pause_cmd(interaction: discord.Interaction):
-    await interaction.response.defer()
-    gm = get_guild_music(interaction.guild_id)
-
-    if gm.voice and gm.voice.is_playing():
-        gm.voice.pause()
-        await interaction.followup.send("⏸ Paused.")
-    else:
-        await interaction.followup.send("❌ Nothing is playing.")
-
-    await update_panel(interaction.guild_id, interaction)
-
-
-@TREE.command(name="resume", description="Resume paused song.")
-async def resume_cmd(interaction: discord.Interaction):
-    await interaction.response.defer()
-    gm = get_guild_music(interaction.guild_id)
-
-    if gm.voice and gm.voice.is_paused():
-        gm.voice.resume()
-        await interaction.followup.send("▶ Resumed.")
-    else:
-        await interaction.followup.send("❌ Nothing is paused.")
-
-    await update_panel(interaction.guild_id, interaction)
-
-
-@TREE.command(name="loop", description="Toggle loop.")
-async def loop_cmd(interaction: discord.Interaction):
-    gm = get_guild_music(interaction.guild_id)
-    gm.loop = not gm.loop
-    await interaction.response.send_message(f"🔁 Loop is now {'ON' if gm.loop else 'OFF'}.")
-    await update_panel(interaction.guild_id, interaction)
-
+        
 
 # ---------------------------
 # Bot Ready
